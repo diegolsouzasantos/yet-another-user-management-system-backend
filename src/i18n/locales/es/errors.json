@@ -1,0 +1,17 @@
+{
+  "validation_failed": "La solicitud contiene campos inválidos.",
+  "unauthorized": "Debes estar autenticado para realizar esta acción.",
+  "forbidden": "No tienes permiso para realizar esta acción.",
+  "not_found": "No se encontró el recurso solicitado.",
+  "conflict": "El recurso ya existe.",
+  "user_email_taken": "Ya existe un usuario con este correo electrónico.",
+  "group_name_taken": "Ya existe un grupo con este nombre.",
+  "role_name_taken": "Ya existe un rol con este nombre.",
+  "role_in_use": "Este rol todavía está asignado a usuarios y no se puede eliminar.",
+  "role_not_found": "El rol seleccionado ya no existe.",
+  "invalid_credentials": "Correo electrónico o contraseña inválidos.",
+  "reset_token_invalid": "Este enlace de restablecimiento de contraseña no es válido o ha expirado.",
+  "protected_target": "No puedes realizar esta acción sobre este usuario.",
+  "owner_transfer_invalid_target": "La propiedad solo puede transferirse a otro Administrador.",
+  "internal": "Ocurrió un error inesperado."
+}

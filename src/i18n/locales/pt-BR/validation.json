@@ -1,0 +1,11 @@
+{
+  "email_invalid": "Deve ser um e-mail válido.",
+  "password_too_short": "A senha deve ter pelo menos 8 caracteres.",
+  "password_needs_special_char": "A senha deve conter ao menos um caractere especial.",
+  "field_required": "Este campo é obrigatório.",
+  "invalid_uuid": "Deve ser um identificador válido.",
+  "invalid_type": "Valor informado é inválido.",
+  "filter_field_invalid": "Este campo não pode ser filtrado.",
+  "filter_operator_invalid": "Este operador não é válido para o campo selecionado.",
+  "filter_value_invalid": "O valor do filtro está ausente ou é inválido."
+}

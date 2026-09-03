@@ -1,0 +1,4 @@
+{
+  "reset_subject": "Reset your yaUMS password",
+  "reset_body": "Open the link below to set a new yaUMS password:\n{{url}}\nIf you did not request this, ignore this email."
+}

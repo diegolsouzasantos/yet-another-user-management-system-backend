@@ -1,0 +1,599 @@
+openapi: 3.0.3
+info:
+  title: yaUMS API
+  description: yet another User Management System — a mini Active-Directory-like backend.
+  version: 0.1.0
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Home
+  - name: Users
+  - name: Groups
+  - name: Roles
+  - name: Permissions
+  - name: Audit Logs
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Authenticate with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { description: Authenticated, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Exchange a refresh token for a new token pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200': { description: Tokens rotated, content: { application/json: { schema: { $ref: '#/components/schemas/TokenPair' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200': { description: Logged out }
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Request a password reset link (dispatched via a fake email service)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ForgotPasswordRequest' }
+      responses:
+        '200': { description: Always succeeds, regardless of whether the email exists }
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Confirm a password reset with the emailed token and a new password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetPasswordRequest' }
+      responses:
+        '200': { description: Password updated }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the current authenticated user
+      responses:
+        '200': { description: Current user, content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' } } } }
+  /home:
+    get:
+      tags: [Home]
+      summary: Home page data, visible to every authenticated role
+      responses:
+        '200': { description: OK }
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Users]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreateRequest' }
+      responses:
+        '201': { description: Created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Users]
+      summary: Bulk soft-delete users by id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkDeleteRequest' }
+      responses:
+        '200': { description: 'Per-id result { deleted: [], skipped: [{ id, reason }] } — owner and protected targets are skipped' }
+  /users/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/UserId' }
+    get:
+      tags: [Users]
+      summary: Get a user by id (own record for Readers)
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Users]
+      summary: Update a user
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdateRequest' }
+      responses:
+        '200': { description: Updated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /users/{id}/permissions:
+    parameters:
+      - { $ref: '#/components/parameters/UserId' }
+    post:
+      tags: [Users]
+      summary: Grant an individual permission to a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PermissionGrantRequest' }
+      responses:
+        '201': { description: Granted }
+  /users/{id}/permissions/{permissionId}:
+    parameters:
+      - { $ref: '#/components/parameters/UserId' }
+      - { name: permissionId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Users]
+      summary: Revoke an individual permission from a user
+      responses:
+        '204': { description: Revoked }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /users/{id}/groups:
+    parameters:
+      - { $ref: '#/components/parameters/UserId' }
+    post:
+      tags: [Users]
+      summary: Add the user to a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddGroupRequest' }
+      responses:
+        '201': { description: Added }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /users/{id}/groups/{groupId}:
+    parameters:
+      - { $ref: '#/components/parameters/UserId' }
+      - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Users]
+      summary: Remove the user from a group
+      responses:
+        '204': { description: Removed }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /users/owner-transfer:
+    post:
+      tags: [Users]
+      summary: Transfer the account Owner flag to another Administrator (Owner only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OwnerTransferRequest' }
+      responses:
+        '200': { description: Ownership transferred }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /groups:
+    get:
+      tags: [Groups]
+      summary: List groups
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Groups]
+      summary: Create a group
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GroupRequest' }
+      responses:
+        '201': { description: Created }
+    delete:
+      tags: [Groups]
+      summary: Bulk soft-delete groups by id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkDeleteRequest' }
+      responses:
+        '200': { description: 'Per-id result { deleted: [], skipped: [{ id, reason }] }' }
+  /groups/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Groups]
+      summary: Get a group by id
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Groups]
+      summary: Update a group
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GroupRequest' }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Groups]
+      summary: Delete a group
+      responses:
+        '204': { description: Deleted }
+  /groups/{id}/users:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Groups]
+      summary: Add a user to the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddUserRequest' }
+      responses:
+        '201': { description: Added }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /groups/{id}/users/{userId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Groups]
+      summary: Remove a user from the group
+      responses:
+        '204': { description: Removed }
+  /groups/{id}/permissions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Groups]
+      summary: Grant a permission to the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PermissionGrantRequest' }
+      responses:
+        '201': { description: Granted }
+  /groups/{id}/permissions/{permissionId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: permissionId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Groups]
+      summary: Revoke a permission from the group
+      responses:
+        '204': { description: Revoked }
+  /roles:
+    get:
+      tags: [Roles]
+      summary: List roles (system and custom)
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Roles]
+      summary: Create a custom role
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleRequest' }
+      responses:
+        '201': { description: Created }
+    delete:
+      tags: [Roles]
+      summary: Bulk soft-delete roles by id (system roles are skipped)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkDeleteRequest' }
+      responses:
+        '200': { description: 'Per-id result { deleted: [], skipped: [{ id, reason }] }' }
+  /roles/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Roles]
+      summary: Get a role by id
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Roles]
+      summary: Update a custom role (system roles are read-only)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleRequest' }
+      responses:
+        '200': { description: Updated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Roles]
+      summary: Delete a custom role (system roles are read-only)
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /roles/{id}/permissions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [Roles]
+      summary: Grant a permission to the role (system roles are read-only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PermissionGrantRequest' }
+      responses:
+        '201': { description: Granted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /roles/{id}/permissions/{permissionId}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: permissionId, in: path, required: true, schema: { type: string, format: uuid } }
+    delete:
+      tags: [Roles]
+      summary: Revoke a permission from the role (system roles are read-only)
+      responses:
+        '204': { description: Revoked }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /permissions:
+    get:
+      tags: [Permissions]
+      summary: List the permission catalogue (read-only, no create/update/delete)
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+      responses:
+        '200': { description: OK }
+  /permissions/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Permissions]
+      summary: Get a permission by id
+      responses:
+        '200': { description: OK }
+  /audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: List audit log entries
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+      responses:
+        '200': { description: OK }
+  /users/export:
+    get:
+      tags: [Users]
+      summary: Export users as CSV (same sort/filter params as the list, plus an optional id selection)
+      parameters:
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+        - { $ref: '#/components/parameters/Ids' }
+      responses:
+        '200': { description: CSV file (attachment), returned when under the size threshold, content: { text/csv: {} } }
+        '202': { description: 'File exceeded the size threshold and was dispatched to the requesting user''s email (fake email service)' }
+  /groups/export:
+    get:
+      tags: [Groups]
+      summary: Export groups as CSV
+      parameters:
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+        - { $ref: '#/components/parameters/Ids' }
+      responses:
+        '200': { description: CSV file, content: { text/csv: {} } }
+        '202': { description: Emailed to the requester }
+  /roles/export:
+    get:
+      tags: [Roles]
+      summary: Export roles as CSV
+      parameters:
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+        - { $ref: '#/components/parameters/Ids' }
+      responses:
+        '200': { description: CSV file, content: { text/csv: {} } }
+        '202': { description: Emailed to the requester }
+  /audit-logs/export:
+    get:
+      tags: [Audit Logs]
+      summary: Export audit log entries as CSV
+      parameters:
+        - { $ref: '#/components/parameters/Sort' }
+        - { $ref: '#/components/parameters/Order' }
+        - { $ref: '#/components/parameters/Filters' }
+        - { $ref: '#/components/parameters/Ids' }
+      responses:
+        '200': { description: CSV file, content: { text/csv: {} } }
+        '202': { description: Emailed to the requester }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1 } }
+    Limit: { name: limit, in: query, description: 'Page size; snapped to one of 10, 25, 50, 100 (default 10)', schema: { type: integer, enum: [10, 25, 50, 100] } }
+    Ids: { name: ids, in: query, description: 'Comma-separated ids to restrict an export to a selection', schema: { type: string } }
+    Sort: { name: sort, in: query, description: Field to sort by (per-resource whitelist), schema: { type: string } }
+    Order: { name: order, in: query, schema: { type: string, enum: [asc, desc, ASC, DESC] } }
+    Filters:
+      name: filters
+      in: query
+      description: >-
+        JSON-encoded array of filter objects, each shaped as { field, operator, value }.
+        Fields are checked against a per-resource whitelist and operators against the
+        field type (text, enum, relation, boolean, number, date). Filters on distinct
+        fields are combined with AND; multiple filters on the same field are combined
+        with OR. Valueless operators (isTrue, isFalse) omit value; "in" takes an array;
+        "between" takes a two-item array or an object with from/to.
+      schema: { type: string }
+    UserId: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    Unauthorized: { description: Missing or invalid credentials }
+    Forbidden: { description: The actor lacks permission for this action }
+    NotFound: { description: The resource does not exist }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    BulkDeleteRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items: { type: string, format: uuid }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string }
+        password: { type: string, minLength: 8 }
+    AddGroupRequest:
+      type: object
+      required: [groupId]
+      properties:
+        groupId: { type: string, format: uuid }
+    AddUserRequest:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: string, format: uuid }
+    TokenPair:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+    AuthResponse:
+      allOf:
+        - { $ref: '#/components/schemas/TokenPair' }
+        - type: object
+          properties:
+            user: { $ref: '#/components/schemas/User' }
+    UserResponse:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        firstName: { type: string }
+        lastName: { type: string }
+        roleId: { type: string, format: uuid }
+        roleName: { type: string }
+        isOwner: { type: boolean }
+        isActive: { type: boolean }
+    UserCreateRequest:
+      type: object
+      required: [email, password, firstName, lastName, roleId]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        firstName: { type: string }
+        lastName: { type: string }
+        roleId: { type: string, format: uuid }
+    UserUpdateRequest:
+      allOf:
+        - { $ref: '#/components/schemas/UserCreateRequest' }
+      description: All fields optional on update.
+    OwnerTransferRequest:
+      type: object
+      required: [targetUserId, currentPassword]
+      properties:
+        targetUserId: { type: string, format: uuid }
+        currentPassword: { type: string }
+    GroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        permissionIds: { type: array, items: { type: string, format: uuid } }
+        userIds: { type: array, items: { type: string, format: uuid } }
+    RoleRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        permissionIds: { type: array, items: { type: string, format: uuid } }
+    PermissionGrantRequest:
+      type: object
+      required: [permissionId]
+      properties:
+        permissionId: { type: string, format: uuid }
