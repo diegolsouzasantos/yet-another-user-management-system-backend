@@ -22,11 +22,15 @@ const users = {
     { header: 'createdAt', value: (row) => iso(row.createdAt) },
     { header: 'updatedAt', value: (row) => iso(row.updatedAt) },
   ],
-  loadRows: async ({ where, joins, order, ids }) => {
+  loadRows: async ({
+    where, joins, order, ids, limit, offset,
+  }) => {
     const joinWhere = await resolveJoinWhere(joins || []);
     return db.User.findAll({
       where: mergeWhere(where, joinWhere, idClause(ids)),
       order,
+      limit,
+      offset,
       include: [db.Role],
     });
   },
@@ -44,8 +48,10 @@ const groups = {
     { header: 'createdAt', value: (row) => iso(row.createdAt) },
     { header: 'updatedAt', value: (row) => iso(row.updatedAt) },
   ],
-  loadRows: async ({ where, order, ids }) => db.Group.findAll({
-    where: mergeWhere(where, idClause(ids)), order,
+  loadRows: async ({
+    where, ids, order, limit, offset,
+  }) => db.Group.findAll({
+    where: mergeWhere(where, idClause(ids)), order, limit, offset,
   }),
 };
 
@@ -63,8 +69,10 @@ const roles = {
     { header: 'createdAt', value: (row) => iso(row.createdAt) },
     { header: 'updatedAt', value: (row) => iso(row.updatedAt) },
   ],
-  loadRows: async ({ where, order, ids }) => db.Role.findAll({
-    where: mergeWhere(where, idClause(ids)), order,
+  loadRows: async ({
+    where, ids, order, limit, offset,
+  }) => db.Role.findAll({
+    where: mergeWhere(where, idClause(ids)), order, limit, offset,
   }),
 };
 
@@ -84,9 +92,13 @@ const auditLogs = {
     { header: 'newValue', value: (row) => row.newValue },
     { header: 'createdAt', value: (row) => iso(row.createdAt) },
   ],
-  loadRows: async ({ where, order, ids }) => db.AuditLog.findAll({
+  loadRows: async ({
+    where, ids, order, limit, offset,
+  }) => db.AuditLog.findAll({
     where: mergeWhere(where, idClause(ids)),
     order,
+    limit,
+    offset,
     include: [{ model: db.User, as: 'actor', attributes: ['id', 'email', 'firstName', 'lastName'] }],
   }),
 };

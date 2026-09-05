@@ -9,6 +9,7 @@
   "role_name_taken": "Ya existe un rol con este nombre.",
   "role_in_use": "Este rol todavía está asignado a usuarios y no se puede eliminar.",
   "role_not_found": "El rol seleccionado ya no existe.",
+  "cannot_delete_owner": "El owner de la cuenta no se puede eliminar.",
   "invalid_credentials": "Correo electrónico o contraseña inválidos.",
   "reset_token_invalid": "Este enlace de restablecimiento de contraseña no es válido o ha expirado.",
   "protected_target": "No puedes realizar esta acción sobre este usuario.",

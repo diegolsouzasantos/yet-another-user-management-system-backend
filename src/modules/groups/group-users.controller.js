@@ -15,13 +15,16 @@ async function loadUser(actor, userId) {
 async function add(req, res) {
   const { userIds } = req.body;
   await Promise.all(userIds.map((userId) => loadUser(req.actor, userId)));
-  await req.target.addUsers(userIds);
-  await recordChange(
-    req.actor.userId,
-    'Group',
-    req.target.id,
-    userIds.map((userId) => ({ field: 'users', oldValue: null, newValue: userId })),
-  );
+  await db.sequelize.transaction(async (transaction) => {
+    await req.target.addUsers(userIds, { transaction });
+    await recordChange(
+      req.actor.userId,
+      'Group',
+      req.target.id,
+      userIds.map((userId) => ({ field: 'users', oldValue: null, newValue: userId })),
+      transaction,
+    );
+  });
   return sendCreated(res, { success: true, added: userIds.length });
 }
 

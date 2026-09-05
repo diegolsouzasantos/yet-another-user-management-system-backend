@@ -4,10 +4,13 @@ function escapeCell(value) {
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-function toCsv(columns, rows) {
-  const header = columns.map((column) => escapeCell(column.header)).join(',');
-  const lines = rows.map((row) => columns.map((column) => escapeCell(column.value(row))).join(','));
-  return [header, ...lines].join('\r\n').concat('\r\n');
+function csvHeaderLine(columns) {
+  return `${columns.map((column) => escapeCell(column.header)).join(',')}\r\n`;
 }
 
-module.exports = { toCsv };
+function csvRowLines(columns, rows) {
+  if (!rows.length) return '';
+  return `${rows.map((row) => columns.map((column) => escapeCell(column.value(row))).join(',')).join('\r\n')}\r\n`;
+}
+
+module.exports = { escapeCell, csvHeaderLine, csvRowLines };

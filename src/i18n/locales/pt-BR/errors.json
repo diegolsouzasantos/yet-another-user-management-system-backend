@@ -9,6 +9,7 @@
   "role_name_taken": "Já existe um cargo com este nome.",
   "role_in_use": "Este cargo ainda está atribuído a usuários e não pode ser excluído.",
   "role_not_found": "O cargo selecionado não existe mais.",
+  "cannot_delete_owner": "O owner da conta não pode ser excluído.",
   "invalid_credentials": "E-mail ou senha inválidos.",
   "reset_token_invalid": "Este link de redefinição de senha é inválido ou expirou.",
   "protected_target": "Você não pode realizar esta ação sobre este usuário.",

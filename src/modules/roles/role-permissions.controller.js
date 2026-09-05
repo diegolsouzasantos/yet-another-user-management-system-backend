@@ -1,3 +1,4 @@
+const db = require('../../db/models');
 const { assertNotSystemRole } = require('./roles.policy');
 const { recordChange } = require('../../audit/audit-log.service');
 const { sendCreated, sendNoContent } = require('../../utils/response.util');
@@ -5,13 +6,16 @@ const { sendCreated, sendNoContent } = require('../../utils/response.util');
 async function add(req, res) {
   assertNotSystemRole(req.target);
   const { permissionIds } = req.body;
-  await req.target.addPermissions(permissionIds);
-  await recordChange(
-    req.actor.userId,
-    'Role',
-    req.target.id,
-    permissionIds.map((permissionId) => ({ field: 'permissions', oldValue: null, newValue: permissionId })),
-  );
+  await db.sequelize.transaction(async (transaction) => {
+    await req.target.addPermissions(permissionIds, { transaction });
+    await recordChange(
+      req.actor.userId,
+      'Role',
+      req.target.id,
+      permissionIds.map((permissionId) => ({ field: 'permissions', oldValue: null, newValue: permissionId })),
+      transaction,
+    );
+  });
   return sendCreated(res, { success: true, added: permissionIds.length });
 }
 

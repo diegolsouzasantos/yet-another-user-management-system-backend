@@ -5,10 +5,15 @@ const routes = require('./routes');
 const notFound = require('./middleware/not-found.middleware');
 const errorHandler = require('./middleware/error-handler.middleware');
 const locale = require('./middleware/locale.middleware');
+const securityHeaders = require('./middleware/security-headers.middleware');
+const accessLog = require('./middleware/access-log.middleware');
 const mountSwagger = require('./swagger/swagger.routes');
 
 const app = express();
 
+app.disable('x-powered-by');
+app.use(securityHeaders);
+app.use(accessLog);
 app.use(cors({ origin: corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition'] }));
 app.use(express.json());
 app.use(locale);

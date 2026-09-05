@@ -54,6 +54,9 @@ async function update(actor, target, data) {
 }
 
 async function remove(actor, target) {
+  if (target.isOwner) {
+    throw new ConflictError('errors.cannot_delete_owner');
+  }
   await recordDelete(actor.userId, 'User', target.id);
   await repository.remove(target);
 }

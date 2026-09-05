@@ -9,6 +9,7 @@
   "role_name_taken": "A role with this name already exists.",
   "role_in_use": "This role is still assigned to users and cannot be deleted.",
   "role_not_found": "The selected role no longer exists.",
+  "cannot_delete_owner": "The account owner cannot be deleted.",
   "invalid_credentials": "Invalid email or password.",
   "reset_token_invalid": "This password reset link is invalid or has expired.",
   "protected_target": "You cannot perform this action on this user.",

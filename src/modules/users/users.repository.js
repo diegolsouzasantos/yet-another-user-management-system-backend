@@ -44,8 +44,8 @@ function remove(user) {
   return user.destroy();
 }
 
-function addPermission(user, permissionId) {
-  return user.addPermission(permissionId);
+function addPermission(user, permissionId, options) {
+  return user.addPermission(permissionId, options);
 }
 
 function removePermission(user, permissionId) {
